@@ -8,6 +8,7 @@ from .yasg import urlpatterns as swagger_url
 admin_url = settings.ADMIN_URL
 
 urlpatterns = [
+    path('api/', include('api.urls')),
     path('', include('main.urls')),
     path(f'{admin_url}/', admin.site.urls),
     path(f'{admin_url}/defender/', include('defender.urls')),

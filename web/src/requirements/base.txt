@@ -44,3 +44,9 @@ django-microservice-request==0.5.1
 
 # JsonValidator
 jsonschema==4.4.0
+
+# CountryField
+django-countries==7.3.2
+
+# Treebeard
+django-treebeard==4.5.1

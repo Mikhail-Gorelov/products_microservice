@@ -4,16 +4,16 @@ x-variables: &variables
   ENV_STAGE: local
 
 services:
-  web:
+  products:
     build:
       context: .
       dockerfile: docker/dev/web/Dockerfile
     volumes:
-      - ./web/:/usr/src/web/:cached
+      - ./web/:/usr/src/web/
       - redis_socket:/redis_socket
       - postgres_socket:/postgres_socket
     ports:
-      - "8000:8000"
+      - "8003:8000"
     environment:
       <<: *variables
     env_file:
@@ -40,6 +40,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
       - postgres_socket:/var/run/postgresql/
+    ports:
+      - "5431:5432"
     env_file:
       - docker/dev/env/.db.env
     networks:

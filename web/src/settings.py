@@ -60,15 +60,19 @@ THIRD_PARTY_APPS = [
     'drf_yasg',
     'corsheaders',
     'rosetta',
+    'treebeard',
 ]
 
 LOCAL_APPS = [
     'main.apps.MainConfig',
+    'channel.apps.ChannelConfig',
+    'product.apps.ProductConfig',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    'main.middleware.SetChannelCookies',
     'corsheaders.middleware.CorsMiddleware',
     'main.middleware.HealthCheckMiddleware',
     'django.middleware.security.SecurityMiddleware',

@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Optional
+from urllib.parse import urlencode
 
 import pytz
 from django.conf import settings
@@ -8,6 +9,7 @@ from django.utils.deprecation import MiddlewareMixin
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from rest_framework.response import Response
 
 
 class HealthCheckMiddleware(MiddlewareMixin):
@@ -26,3 +28,21 @@ class TimezoneMiddleware:
         else:
             timezone.deactivate()
         return self.get_response(request)
+
+
+class SetChannelCookies:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def set_cookies(self, request: 'HttpRequest'):
+        return
+
+    def __call__(self, request: 'HttpRequest'):
+        self.set_cookies(request=request)
+        response: 'Response' = self.get_response(request)
+        value = {
+            'country': 'RU',
+            'currency_code': 'RUB',
+        }
+        # response.set_cookie('channel', urlencode(value))
+        return response
