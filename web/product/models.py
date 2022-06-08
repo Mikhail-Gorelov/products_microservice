@@ -1,11 +1,14 @@
 from django.db import models
 from treebeard.mp_tree import MP_Node
 from channel.models import Channel
+from unidecode import unidecode
+from django.template import defaultfilters
+from django.utils.text import slugify
 from . import choices
 
 
 class ProductType(models.Model):
-    name = models.CharField(max_length=250)
+    name = models.CharField(max_length=250, unique=True)
     slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
     kind = models.CharField(max_length=32, choices=choices.ProductTypeKind.CHOICES)
     has_variants = models.BooleanField(default=True)
@@ -14,6 +17,11 @@ class ProductType(models.Model):
     category = models.ForeignKey(
         "Category", related_name="product_type", on_delete=models.SET_NULL, null=True, blank=True
     )
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(unidecode(self.name))
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.slug
@@ -24,7 +32,7 @@ class ProductType(models.Model):
 
 
 class Category(MP_Node):
-    name = models.CharField(max_length=250)
+    name = models.CharField(max_length=250, unique=True)
     slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
     description = models.CharField(max_length=300)
     background_image = models.ImageField(
@@ -32,6 +40,11 @@ class Category(MP_Node):
     )
 
     node_order_by = ['name']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = defaultfilters.slugify(unidecode(self.name))
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return 'Category: {}'.format(self.name)
@@ -45,7 +58,7 @@ class Product(models.Model):
     product_type = models.ForeignKey(
         ProductType, related_name="products", on_delete=models.CASCADE
     )
-    name = models.CharField(max_length=250)
+    name = models.CharField(max_length=250, unique=True)
     slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
     description = models.CharField(max_length=300)
     created = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -61,9 +74,14 @@ class Product(models.Model):
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
-        related_name="+",
+        related_name="default_variant",
     )
     rating = models.FloatField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = defaultfilters.slugify(unidecode(self.name))
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.slug

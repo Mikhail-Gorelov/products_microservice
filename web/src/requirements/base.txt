@@ -50,3 +50,6 @@ django-countries==7.3.2
 
 # Treebeard
 django-treebeard==4.5.1
+
+# Unidecode
+Unidecode==1.3.4

@@ -1,31 +1,83 @@
 from rest_framework import serializers
 from product import models
+from product.models import Category
 
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Category
-        fields = ("name", "description", "background_image")
-
-class ProductTypeSerializer(serializers.ModelSerializer):
-    category = CategorySerializer()
-    class Meta:
-        model = models.ProductType
-        fields = ("name", "category", "kind", "has_variants", "is_shipping_required", "is_digital")
-
-class ProductSerializer(serializers.ModelSerializer):
-    product_type = ProductTypeSerializer()
-    class Meta:
-        model = models.Product
-        fields = ("name", "product_type", "description", "weight", "rating")
-
-class ProductVariantSerializer(serializers.ModelSerializer):
-    product = ProductSerializer()
-    class Meta:
-        model = models.ProductVariant
-        fields = ("name", "product", "media", "track_inventory", "is_preorder", "preorder_end_date", "preorder_threshold")
 
 class HotProductsSerializer(serializers.ModelSerializer):
-    product_variant = ProductVariantSerializer()
+    media = serializers.CharField()
+    full_price = serializers.DecimalField(decimal_places=2, max_digits=8)
+
     class Meta:
-        model = models.ProductVariantChannelListing
-        fields =("product_variant", "available_to_purchase", "price", "cost_price")
+        model = models.ProductVariant
+        fields = ("name", "media", "full_price")
+
+
+class ProductTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.ProductType
+        fields = ("name", "kind", "has_variants", "is_shipping_required", "is_digital")
+
+
+class ProductDetailUnitSerializer(serializers.ModelSerializer):
+    breadcrumbs = serializers.SerializerMethodField('get_breadcrumbs')
+    media = serializers.SerializerMethodField('get_media')
+
+    def get_breadcrumbs(self, obj):
+        category: Category = obj.product_type.category
+        breadcrumbs = list(category.get_ancestors().values('name', 'slug'))
+        breadcrumbs.append({
+            'name': category.name,
+            'slug': category.slug
+        })
+        return breadcrumbs
+
+    def get_media(self, obj):
+        return [i[0] for i in obj.media.all().values_list('media_file')]
+
+    class Meta:
+        model = models.Product
+        fields = ("description", "breadcrumbs", "weight", "rating", "slug", "media")
+
+
+class ProductDetailSerializer(serializers.ModelSerializer):
+    product = ProductDetailUnitSerializer()
+    price = serializers.SerializerMethodField('get_price')
+    cost_price = serializers.SerializerMethodField('get_cost_price')
+
+    def get_price(self, instance):
+        # TODO: NEED TO FILTER HERE BY CHANNEL NO HARDCODE
+        return instance.channel_listings.filter(channel=2).values_list('price')[0][0]
+
+    def get_cost_price(self, instance):
+        # TODO: NEED TO FILTER HERE BY CHANNEL NO HARDCODE
+        return instance.channel_listings.filter(channel=2).values_list('cost_price')[0][0]
+
+    class Meta:
+        model = models.ProductVariant
+        fields = ("name", "price", "cost_price", "product")
+
+
+class ProductListUnitSerializer(serializers.ModelSerializer):
+    breadcrumbs = serializers.SerializerMethodField('get_breadcrumbs')
+
+    def get_breadcrumbs(self, obj):
+        category: Category = obj.product_type.category
+        breadcrumbs = list(category.get_ancestors().values('name', 'slug'))
+        breadcrumbs.append({
+            'name': category.name,
+            'slug': category.slug
+        })
+        return breadcrumbs
+
+    class Meta:
+        model = models.Product
+        fields = ("description", "breadcrumbs", "slug")
+
+
+class ProductListSerializer(serializers.ModelSerializer):
+    product = ProductListUnitSerializer()
+    product_media = serializers.CharField()
+
+    class Meta:
+        model = models.ProductVariant
+        fields = ("id", "product", "name", "product_media")
