@@ -12,6 +12,7 @@ from .services import ProductService
 
 
 class HotProductsView(ListAPIView):
+    permission_classes = (AllowAny,)
     pagination_class = BaseProductsPagination
     serializer_class = serializers.HotProductsSerializer
 

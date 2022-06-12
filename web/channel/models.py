@@ -1,6 +1,6 @@
 from django.db import models
 from unidecode import unidecode
-from django.template import defaultfilters
+from django.utils.text import slugify
 from django_countries.fields import CountryField
 
 
@@ -13,7 +13,7 @@ class Channel(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = defaultfilters.slugify(unidecode(self.name))
+            self.slug = slugify(unidecode(self.name))
         return super().save(*args, **kwargs)
 
     class Meta:

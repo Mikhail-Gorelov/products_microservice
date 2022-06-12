@@ -1,15 +1,19 @@
 from rest_framework import serializers
+from django.conf import settings
 from product import models
 from product.models import Category
 
 
 class HotProductsSerializer(serializers.ModelSerializer):
-    media = serializers.CharField()
+    media = serializers.SerializerMethodField()
     full_price = serializers.DecimalField(decimal_places=2, max_digits=8)
 
     class Meta:
         model = models.ProductVariant
         fields = ("name", "media", "full_price")
+
+    def get_media(self, obj):
+        return settings.MEDIA_URL + obj.media
 
 
 class ProductTypeSerializer(serializers.ModelSerializer):

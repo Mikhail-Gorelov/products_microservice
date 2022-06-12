@@ -2,7 +2,6 @@ from django.db import models
 from treebeard.mp_tree import MP_Node
 from channel.models import Channel
 from unidecode import unidecode
-from django.template import defaultfilters
 from django.utils.text import slugify
 from . import choices
 
@@ -43,7 +42,7 @@ class Category(MP_Node):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = defaultfilters.slugify(unidecode(self.name))
+            self.slug = slugify(unidecode(self.name))
         return super().save(*args, **kwargs)
 
     def __str__(self):
@@ -80,7 +79,7 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = defaultfilters.slugify(unidecode(self.name))
+            self.slug = slugify(unidecode(self.name))
         return super().save(*args, **kwargs)
 
     def __str__(self):

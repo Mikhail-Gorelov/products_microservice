@@ -176,8 +176,8 @@ TIMEZONE_COOKIE_AGE = 15552000  # 60*60*24*180
 STATIC_URL = f'{MICROSERVICE_PREFIX}/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-MEDIA_URL = f'{MICROSERVICE_PREFIX}/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = f'{MICROSERVICE_PREFIX}/media-products/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media-products')
 
 LOCALE_PATHS = (os.path.join(BASE_DIR, 'locale'),)
 
