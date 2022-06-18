@@ -6,7 +6,7 @@ from product.pagination import BaseProductsPagination
 from product import models, choices
 from django.db.models import Sum, Subquery, OuterRef, Count
 from channel.models import Channel
-from product.models import Category, Product, ProductVariant
+from product.models import Category, Product, ProductVariant, ProductVariantChannelListing
 from . import serializers
 from .services import ProductService
 
@@ -36,6 +36,7 @@ class HotProductsView(ListAPIView):
 
     def list(self, request, *args, **kwargs):
         self.channel_cookie = {k: v[0] for k, v in dict(request.data).items()}
+        print(request.COOKIES)
         return super().list(request, *args, **kwargs)
 
 
@@ -48,7 +49,13 @@ class ProductDetailView(RetrieveAPIView):
     serializer_class = serializers.ProductDetailSerializer
 
     def get_queryset(self):
-        return ProductVariant.objects.all()
+        price = ProductVariantChannelListing.objects.filter(product_variant_id=OuterRef('id')).values('price')
+        cost_price = ProductVariantChannelListing.objects.filter(product_variant_id=OuterRef('id')).values('cost_price')
+        # currency = ProductVariantChannelListing.objects.filter(product_variant_id=OuterRef('id')).values('')
+        return ProductVariant.objects.all().annotate(
+            price=Subquery(price[:1]),
+            cost_price=Subquery(cost_price[:1])
+        )
 
 
 class ProductListView(ListAPIView):

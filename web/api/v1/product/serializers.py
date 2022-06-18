@@ -10,7 +10,7 @@ class HotProductsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.ProductVariant
-        fields = ("name", "media", "full_price")
+        fields = ("id", "name", "media", "full_price")
 
     def get_media(self, obj):
         return settings.MEDIA_URL + obj.media
@@ -36,7 +36,7 @@ class ProductDetailUnitSerializer(serializers.ModelSerializer):
         return breadcrumbs
 
     def get_media(self, obj):
-        return [i[0] for i in obj.media.all().values_list('media_file')]
+        return [settings.MEDIA_URL + i[0] for i in obj.media.all().values_list('media_file')]
 
     class Meta:
         model = models.Product
@@ -45,20 +45,13 @@ class ProductDetailUnitSerializer(serializers.ModelSerializer):
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     product = ProductDetailUnitSerializer()
-    price = serializers.SerializerMethodField('get_price')
-    cost_price = serializers.SerializerMethodField('get_cost_price')
+    price = serializers.CharField()
+    cost_price = serializers.CharField()
 
-    def get_price(self, instance):
-        # TODO: NEED TO FILTER HERE BY CHANNEL NO HARDCODE
-        return instance.channel_listings.filter(channel=2).values_list('price')[0][0]
-
-    def get_cost_price(self, instance):
-        # TODO: NEED TO FILTER HERE BY CHANNEL NO HARDCODE
-        return instance.channel_listings.filter(channel=2).values_list('cost_price')[0][0]
 
     class Meta:
         model = models.ProductVariant
-        fields = ("name", "price", "cost_price", "product")
+        fields = ("id", "name", "price", "cost_price", "product")
 
 
 class ProductListUnitSerializer(serializers.ModelSerializer):
