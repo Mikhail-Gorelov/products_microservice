@@ -29,13 +29,9 @@ class CategoryAdmin(TreeAdmin):
 
 @admin.register(models.Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'slug')
+    list_display = ('id', 'name')
     list_filter = ('name',)
     search_fields = ('name',)
-    readonly_fields = ('slug',)
-
-    def get_readonly_fields(self, request, obj=None):
-        return [] if obj else self.readonly_fields
 
 
 @admin.register(models.ProductVariant)
@@ -44,6 +40,10 @@ class ProductVariantAdmin(admin.ModelAdmin):
     list_filter = ('name',)
     search_fields = ('name',)
     filter_horizontal = ('media',)
+    readonly_fields = ('slug',)
+
+    def get_readonly_fields(self, request, obj=None):
+        return [] if obj else self.readonly_fields
 
 
 @admin.register(models.ProductMedia)

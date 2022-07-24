@@ -58,16 +58,9 @@ class Product(models.Model):
         ProductType, related_name="products", on_delete=models.CASCADE
     )
     name = models.CharField(max_length=250, unique=True)
-    slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
     description = models.CharField(max_length=300)
     created = models.DateTimeField(auto_now_add=True, db_index=True)
     updated = models.DateTimeField(auto_now=True, db_index=True)
-    weight = models.DecimalField(
-        max_digits=5,
-        decimal_places=1,
-        blank=True,
-        null=True,
-    )
     default_variant = models.OneToOneField(
         "ProductVariant",
         blank=True,
@@ -76,14 +69,10 @@ class Product(models.Model):
         related_name="default_variant",
     )
     rating = models.FloatField(null=True, blank=True)
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(unidecode(self.name))
-        return super().save(*args, **kwargs)
+    is_bestseller = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.slug
+        return self.name
 
     class Meta:
         verbose_name = 'Product'
@@ -97,14 +86,26 @@ class ProductVariant(models.Model):
     )
     media = models.ManyToManyField("ProductMedia", through="VariantMedia")
     track_inventory = models.BooleanField(default=True)
+    slug = models.SlugField(max_length=255, unique=True, allow_unicode=True, blank=True, null=True)
+    weight = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        blank=True,
+        null=True,
+    )
     is_preorder = models.BooleanField(default=False)
     preorder_end_date = models.DateTimeField(null=True, blank=True)
     preorder_threshold = models.IntegerField(blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(unidecode(self.name))
+        return super().save(*args, **kwargs)
+
     def __str__(self):
-        return self.name
+        return str(self.slug)
 
     class Meta:
         verbose_name = 'ProductVariant'
@@ -174,7 +175,6 @@ class ProductVariantChannelListing(models.Model):
         blank=True,
         null=True,
     )
-    is_bestseller = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.pk)
