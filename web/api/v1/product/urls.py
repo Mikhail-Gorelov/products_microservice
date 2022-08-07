@@ -11,4 +11,5 @@ urlpatterns = [
     path('product/<int:pk>/', views.ProductDetailView.as_view(), name='product-detail'),
     path('secure/', views.SecureView.as_view()),
     path('product-list/', views.ProductsView.as_view(), name='product-list'),
+    path('product-variant/<int:pk>/', views.ProductsVariantView.as_view(), name='product-variant'),
 ]

@@ -134,3 +134,12 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 class ProductsSerializer(serializers.Serializer):
     products = serializers.ListSerializer(child=serializers.IntegerField())
+
+
+class ProductVariantDetailSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name')
+    variant_name = serializers.CharField(source='name')
+
+    class Meta:
+        model = models.ProductVariant
+        fields = ('id', 'product_name', 'variant_name')

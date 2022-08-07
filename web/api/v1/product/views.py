@@ -73,6 +73,13 @@ class ProductDetailView(RetrieveAPIView):
         return Product.objects.all()
 
 
+class ProductsVariantView(RetrieveAPIView):
+    serializer_class = serializers.ProductVariantDetailSerializer
+
+    def get_queryset(self):
+        return ProductVariant.objects.all()
+
+
 class ProductListView(ListAPIView):
     serializer_class = serializers.ProductDetailUnitSerializer
     pagination_class = BaseProductsPagination
