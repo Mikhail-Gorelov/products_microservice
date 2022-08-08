@@ -2,6 +2,7 @@ from urllib.parse import parse_qsl
 from rest_framework.response import Response
 
 from channel.models import Channel
+from product.models import Product
 
 
 class ProductService:

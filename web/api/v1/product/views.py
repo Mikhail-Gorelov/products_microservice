@@ -1,15 +1,14 @@
 from decimal import Decimal
 
+from django.db.models import Subquery, OuterRef
 from rest_framework.generics import GenericAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from django.db.models import CharField, Q
 
-from product.pagination import BaseProductsPagination
-from product import models, choices
-from django.db.models import Sum, Subquery, OuterRef, Count
 from channel.models import Channel
-from product.models import Category, Product, ProductVariant, ProductVariantChannelListing
+from product import models, choices
+from product.models import Category, Product, ProductVariant
+from product.pagination import BaseProductsPagination
 from . import serializers
 from .filters import ProductsFilter
 from .services import ProductService
@@ -47,9 +46,7 @@ class HotProductsView(ListAPIView):
 class HotProductsDetailView(RetrieveAPIView):
     permission_classes = (AllowAny,)
     serializer_class = serializers.ProductDetailUnitSerializer
-
-    def get_queryset(self):
-        return Product.objects.filter(is_bestseller=True)
+    queryset = Product.objects.filter(is_bestseller=True)
 
     def retrieve(self, request, *args, **kwargs):
         # TODO: сделать ещё фильтрацию по регионам, чтобы всегда был get на один листинг (один вариант - один листинг)
@@ -68,24 +65,18 @@ class CategoriesView(GenericAPIView):
 
 class ProductDetailView(RetrieveAPIView):
     serializer_class = serializers.ProductDetailUnitSerializer
-
-    def get_queryset(self):
-        return Product.objects.all()
+    queryset = Product.objects.all()
 
 
 class ProductsVariantView(RetrieveAPIView):
     serializer_class = serializers.ProductVariantDetailSerializer
-
-    def get_queryset(self):
-        return ProductVariant.objects.all()
+    queryset = ProductVariant.objects.all()
 
 
 class ProductListView(ListAPIView):
     serializer_class = serializers.ProductDetailUnitSerializer
     pagination_class = BaseProductsPagination
-
-    def get_queryset(self):
-        return Product.objects.all()
+    queryset = Product.objects.all()
 
 
 class SecureView(GenericAPIView):

@@ -142,4 +142,4 @@ class ProductVariantDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.ProductVariant
-        fields = ('id', 'product_name', 'variant_name')
+        fields = ('id', 'product_name', 'variant_name', 'product_sku')

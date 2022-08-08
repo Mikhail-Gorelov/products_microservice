@@ -3,6 +3,7 @@ from treebeard.mp_tree import MP_Node
 from channel.models import Channel
 from unidecode import unidecode
 from django.utils.text import slugify
+from uuid import uuid4
 from . import choices
 
 
@@ -84,6 +85,7 @@ class ProductVariant(models.Model):
     product = models.ForeignKey(
         Product, related_name="variants", on_delete=models.CASCADE
     )
+    product_sku = models.CharField(max_length=255, unique=True, default=uuid4, blank=True, null=True)
     media = models.ManyToManyField("ProductMedia", through="VariantMedia")
     track_inventory = models.BooleanField(default=True)
     slug = models.SlugField(max_length=255, unique=True, allow_unicode=True, blank=True, null=True)
