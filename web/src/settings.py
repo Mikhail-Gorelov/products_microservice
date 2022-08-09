@@ -67,6 +67,7 @@ LOCAL_APPS = [
     'main.apps.MainConfig',
     'channel.apps.ChannelConfig',
     'product.apps.ProductConfig',
+    'actions.apps.ActionsConfig',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
@@ -188,7 +189,6 @@ CSRF_COOKIE_NAME = 'csrftoken_product'
 
 if DEBUG:
     ROSETTA_SHOW_AT_ADMIN_PANEL = True
-
 
 if JAEGER_AGENT_HOST := os.environ.get('JAEGER_AGENT_HOST'):
     from django_opentracing import DjangoTracing

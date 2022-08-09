@@ -16,7 +16,7 @@ class HotProductsView(ListAPIView):
     filterset_class = ProductsFilter
     pagination_class = BaseProductsPagination
     serializer_class = serializers.ProductSerializer
-    queryset = models.Product.objects.all()
+    queryset = Product.objects.filter(is_bestseller=True)
 
     def list(self, request, *args, **kwargs):
         self.channel_cookie = {k: v[0] for k, v in dict(request.data).items()}

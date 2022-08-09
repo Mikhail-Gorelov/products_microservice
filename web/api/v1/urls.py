@@ -5,5 +5,6 @@ app_name = 'v1'
 
 urlpatterns = [
     path('', include('api.v1.product.urls')),
+    path('', include('api.v1.actions.urls')),
 ]
 

@@ -1,9 +1,13 @@
 from django.db import models
 from treebeard.mp_tree import MP_Node
+
+from actions.choices import LikeChoice
+from actions.models import Like
 from channel.models import Channel
 from unidecode import unidecode
 from django.utils.text import slugify
 from uuid import uuid4
+from django.contrib.contenttypes.fields import GenericRelation
 from . import choices
 
 
@@ -71,6 +75,19 @@ class Product(models.Model):
     )
     rating = models.FloatField(null=True, blank=True)
     is_bestseller = models.BooleanField(default=False)
+    votes = GenericRelation(Like, related_query_name="products")
+
+    def likes(self):
+        return self.votes.aggregate(
+            count=models.Count(
+                "vote", filter=models.Q(vote=LikeChoice.LIKE))
+        )
+
+    def dislikes(self):
+        return self.votes.aggregate(
+            count=models.Count(
+                "vote", filter=models.Q(vote=LikeChoice.DISLIKE))
+        )
 
     def __str__(self):
         return self.name

@@ -166,5 +166,5 @@ class ProductService:
             product_variant = models.ProductVariantChannelListing.objects.filter(
                 product_variant__product=obj
             )
-        variants = models.ProductVariant.objects.filter(channel_listings__in=product_variant)
+        variants = models.ProductVariant.objects.filter(channel_listings__in=product_variant).order_by('created')
         return [settings.MEDIA_URL + i[0] for i in variants.values_list('media__media_file')]
