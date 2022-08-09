@@ -1,7 +1,9 @@
 from django.db.models import OuterRef, Subquery
 from rest_framework import serializers
 from django.conf import settings
+from django.db.models import Min
 
+from api.v1.product.services import ProductService
 from channel.models import Channel
 from product import models
 from product.models import Category
@@ -27,14 +29,13 @@ class ProductSerializer(serializers.ModelSerializer):
     variants_count = serializers.SerializerMethodField('get_variants_count')
 
     def get_media(self, obj):
-        return settings.MEDIA_URL + str(obj.variants.first().media.all().first().media_file)
+        return ProductService.get_media_of_product(obj=obj, request=self.context['request'])
 
     def get_full_price(self, obj):
-        return obj.variants.first().channel_listings.first().cost_price
+        return ProductService.get_full_price_of_product(obj=obj, request=self.context['request'])
 
     def get_variants_count(self, obj):
-        variant = models.ProductVariant.objects.filter(product=obj, channel_listings__visible_in_listings=True)
-        return variant.count()
+        return ProductService.get_variants_count(obj=obj, request=self.context['request'])
 
     class Meta:
         model = models.Product
@@ -62,34 +63,10 @@ class ProductDetailUnitSerializer(serializers.ModelSerializer):
         return breadcrumbs
 
     def get_media(self, obj):
-        return [settings.MEDIA_URL + i[0] for i in obj.media.all().values_list('media_file')]
+        return ProductService.get_media_for_variants(obj=obj, request=self.context['request'])
 
     def get_variants(self, obj):
-        channel_dict = {
-            'country': self.context['request'].COOKIES.get('country'),
-            'currency_code': self.context['request'].COOKIES.get('currency_code'),
-        }
-        channel = Channel.objects.filter(**channel_dict)
-        product_variant = models.ProductVariantChannelListing.objects.filter(
-            channel__in=channel,
-            visible_in_listings=True,
-            product_variant__product=obj
-        )
-        name = models.ProductVariant.objects.filter(id=OuterRef('product_variant_id')).values('name')
-        full_price = models.ProductVariant.objects.filter(id=OuterRef('product_variant_id')).values(
-            'channel_listings__cost_price')
-        weight = models.ProductVariant.objects.filter(id=OuterRef('product_variant_id')).values('weight')
-        slug = models.ProductVariant.objects.filter(id=OuterRef('product_variant_id')).values('slug')
-        variant_media = models.ProductVariant.objects.filter(id=OuterRef('product_variant_id')).values(
-            'media__media_file')
-        serializer_input = product_variant.select_related('product_variant', ).all().annotate(
-            name=Subquery(name),
-            full_price=Subquery(full_price),
-            weight=Subquery(weight),
-            slug=Subquery(slug),
-            variant_media=Subquery(variant_media)
-        )
-        return VariantsSerializer(serializer_input, many=True).data
+        return VariantsSerializer(ProductService.get_variants(obj=obj, request=self.context['request']), many=True).data
 
     class Meta:
         model = models.Product

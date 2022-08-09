@@ -1,11 +1,8 @@
-from decimal import Decimal
-
 from django.db.models import Subquery, OuterRef
 from rest_framework.generics import GenericAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from channel.models import Channel
 from product import models, choices
 from product.models import Category, Product, ProductVariant
 from product.pagination import BaseProductsPagination
@@ -19,24 +16,7 @@ class HotProductsView(ListAPIView):
     filterset_class = ProductsFilter
     pagination_class = BaseProductsPagination
     serializer_class = serializers.ProductSerializer
-
-    def get_queryset(self):
-        if not ProductService.is_channel_exists(self.channel_cookie):
-            return None
-        channel = Channel.objects.filter(**self.channel_cookie)
-        price_from = self.request.query_params.get('price_from', 0)
-        price_to = self.request.query_params.get('price_to', 999999.99)
-        product_variant = models.ProductVariantChannelListing.objects.filter(
-            cost_price__gte=Decimal(str(price_from)),
-            cost_price__lte=Decimal(str(price_to)),
-            channel__in=channel,
-            visible_in_listings=True
-        )
-        basic_filtration = models.Product.objects.filter(
-            variants__channel_listings__in=product_variant,
-            is_bestseller=True,
-        ).distinct()
-        return basic_filtration
+    queryset = models.Product.objects.all()
 
     def list(self, request, *args, **kwargs):
         self.channel_cookie = {k: v[0] for k, v in dict(request.data).items()}
