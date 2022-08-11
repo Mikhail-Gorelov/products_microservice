@@ -1,14 +1,17 @@
+from uuid import uuid4
+
 from django.db import models
+from django.utils.text import slugify
 from treebeard.mp_tree import MP_Node
+from unidecode import unidecode
 
 from actions.choices import LikeChoice
-from actions.models import Like
 from channel.models import Channel
-from unidecode import unidecode
-from django.utils.text import slugify
-from uuid import uuid4
-from django.contrib.contenttypes.fields import GenericRelation
 from . import choices
+
+
+def generate_hex():
+    return uuid4().hex
 
 
 class ProductType(models.Model):
@@ -75,22 +78,15 @@ class Product(models.Model):
     )
     rating = models.FloatField(null=True, blank=True)
     is_bestseller = models.BooleanField(default=False)
-    votes = GenericRelation(Like, related_query_name="products")
-
-    def likes(self):
-        return self.votes.aggregate(
-            count=models.Count(
-                "vote", filter=models.Q(vote=LikeChoice.LIKE))
-        )
-
-    def dislikes(self):
-        return self.votes.aggregate(
-            count=models.Count(
-                "vote", filter=models.Q(vote=LikeChoice.DISLIKE))
-        )
 
     def __str__(self):
         return self.name
+
+    def current_vote(self):
+        return self.product_like.aggregate(
+            count=models.Count(
+                "vote", filter=models.Q(vote=LikeChoice.LIKE))
+        )
 
     class Meta:
         verbose_name = 'Product'
@@ -102,7 +98,7 @@ class ProductVariant(models.Model):
     product = models.ForeignKey(
         Product, related_name="variants", on_delete=models.CASCADE
     )
-    product_sku = models.CharField(max_length=255, unique=True, default=uuid4, blank=True, null=True)
+    product_sku = models.CharField(max_length=255, unique=True, default=generate_hex, blank=True, null=True)
     media = models.ManyToManyField("ProductMedia", through="VariantMedia")
     track_inventory = models.BooleanField(default=True)
     slug = models.SlugField(max_length=255, unique=True, allow_unicode=True, blank=True, null=True)

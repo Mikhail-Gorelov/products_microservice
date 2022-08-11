@@ -3,6 +3,7 @@ from rest_framework import serializers
 from django.conf import settings
 from django.db.models import Min
 
+from api.v1.actions.services import ActionsService
 from api.v1.product.services import ProductService
 from channel.models import Channel
 from product import models
@@ -27,6 +28,7 @@ class ProductSerializer(serializers.ModelSerializer):
     media = serializers.SerializerMethodField('get_media')
     full_price = serializers.SerializerMethodField('get_full_price')
     variants_count = serializers.SerializerMethodField('get_variants_count')
+    current_like = serializers.SerializerMethodField('get_current_like')
 
     def get_media(self, obj):
         return ProductService.get_media_of_product(obj=obj, request=self.context['request'])
@@ -37,9 +39,12 @@ class ProductSerializer(serializers.ModelSerializer):
     def get_variants_count(self, obj):
         return ProductService.get_variants_count(obj=obj, request=self.context['request'])
 
+    def get_current_like(self, obj):
+        return obj.current_vote()["count"]
+
     class Meta:
         model = models.Product
-        fields = ("id", "name", "media", "full_price", "rating", "description", "variants_count")
+        fields = ("id", "name", "media", "full_price", "rating", "description", "variants_count", "current_like")
 
 
 class ProductTypeSerializer(serializers.ModelSerializer):
@@ -120,3 +125,9 @@ class ProductVariantDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ProductVariant
         fields = ('id', 'product_name', 'variant_name', 'product_sku')
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Category
+        fields = ('id', 'name', 'slug', 'description', 'background_image')

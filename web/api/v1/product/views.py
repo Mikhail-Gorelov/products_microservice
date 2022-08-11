@@ -43,6 +43,17 @@ class CategoriesView(GenericAPIView):
         return Response(Category.dump_bulk())
 
 
+class CategoriesDetailView(RetrieveAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = serializers.CategorySerializer
+    queryset = Category.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+
 class ProductDetailView(RetrieveAPIView):
     serializer_class = serializers.ProductDetailUnitSerializer
     queryset = Product.objects.all()

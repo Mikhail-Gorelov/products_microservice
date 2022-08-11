@@ -1,32 +1,33 @@
 from rest_framework import serializers
 
 from actions import choices
+from actions.models import Like
 from api.v1.actions.services import ActionsService
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class AssessmentSerializer(serializers.Serializer):
-    like_type = serializers.ChoiceField(choices=choices.LikeTypeChoice.choices)
-    object_id = serializers.IntegerField()
+    product = serializers.IntegerField()
     vote = serializers.ChoiceField(choices=choices.LikeChoice.choices)
 
     def save(self, **kwargs):
-        user = self.context['request'].user
+        user = self.context['request'].remote_user.id
         vote: int = self.validated_data["vote"]
-        like_type: str = self.validated_data["like_type"]
-        object_id: int = self.validated_data["object_id"]
-        obj = ActionsService.get_like_object(like_type, object_id)
-        if like := ActionsService.get_like(user, obj, object_id):
+        product: int = self.validated_data["product"]
+        obj = ActionsService.get_like_object(product)
+        if like := ActionsService.get_like(user, product):
             if like.vote == vote:
                 like.delete()
             else:
                 like.vote = vote
                 like.save(update_fields=["vote"])
         else:
-            # Like.objects.create(user=user, content_type=, object_id=, vote=)
-            obj.votes.create(user=user, vote=vote)
+            Like.objects.create(user_id=user, product_id=product, vote=vote)
+            # obj.votes.create(user_id=user, vote=vote)
 
         return_data = {
-            "likes_count": obj.likes()["count"],
-            "dislike_count": obj.dislikes()["count"],
+            "current_vote": obj.current_vote()["count"],
         }
         return return_data

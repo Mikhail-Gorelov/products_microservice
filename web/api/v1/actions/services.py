@@ -9,18 +9,16 @@ from main.models import UserType
 
 class ActionsService:
     @staticmethod
-    def get_like_object(like_type: str, object_id: int) -> Union[Product]:
-        if like_type == choices.LikeTypeChoice.PRODUCT:
-            return Product.objects.get(id=object_id)
+    def get_like_object(object_id: int) -> Union[Product]:
+        return Product.objects.get(id=object_id)
 
     @staticmethod
     def get_content_object(model_object: Union[Product]) -> ContentType:
         return ContentType.objects.get_for_model(model_object)
 
     @staticmethod
-    def get_like(user: UserType, obj: Union[Product], object_id: int) -> Optional[Like]:
-        content_type = ActionsService.get_content_object(obj)
+    def get_like(user: UserType, product_id: int) -> Optional[Like]:
         try:
-            return Like.objects.get(user=user, content_type=content_type, object_id=object_id)
+            return Like.objects.get(user__id=user, product__id=product_id)
         except Like.DoesNotExist:
             return None
