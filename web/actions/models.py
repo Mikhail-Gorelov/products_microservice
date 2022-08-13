@@ -8,11 +8,7 @@ User = get_user_model()
 
 
 class Like(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='user_likes'
-    )
+    user_id = models.PositiveIntegerField()
     product = models.ForeignKey(Product, related_name="product_like", on_delete=models.CASCADE, null=True)
     vote = models.PositiveSmallIntegerField(choices=LikeChoice.choices, db_index=True)
     date = models.DateTimeField(auto_now_add=True, db_index=True)

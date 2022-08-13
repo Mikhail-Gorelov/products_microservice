@@ -11,22 +11,22 @@ from .filters import ProductsFilter
 from .services import ProductService
 
 
-class HotProductsView(ListAPIView):
+class ProductsListView(ListAPIView):
     permission_classes = (AllowAny,)
     filterset_class = ProductsFilter
     pagination_class = BaseProductsPagination
     serializer_class = serializers.ProductSerializer
-    queryset = Product.objects.filter(is_bestseller=True)
+    queryset = Product.objects.all()
 
     def list(self, request, *args, **kwargs):
         self.channel_cookie = {k: v[0] for k, v in dict(request.data).items()}
         return super().list(request, *args, **kwargs)
 
 
-class HotProductsDetailView(RetrieveAPIView):
+class ProductsDetailView(RetrieveAPIView):
     permission_classes = (AllowAny,)
     serializer_class = serializers.ProductDetailUnitSerializer
-    queryset = Product.objects.filter(is_bestseller=True)
+    queryset = Product.objects.filter()
 
     def retrieve(self, request, *args, **kwargs):
         # TODO: сделать ещё фильтрацию по регионам, чтобы всегда был get на один листинг (один вариант - один листинг)
@@ -52,11 +52,6 @@ class CategoriesDetailView(RetrieveAPIView):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
-
-
-class ProductDetailView(RetrieveAPIView):
-    serializer_class = serializers.ProductDetailUnitSerializer
-    queryset = Product.objects.all()
 
 
 class ProductsVariantView(RetrieveAPIView):
