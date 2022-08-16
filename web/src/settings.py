@@ -185,7 +185,7 @@ LOCALE_PATHS = (os.path.join(BASE_DIR, 'locale'),)
 
 LANGUAGES = (('en', _('English')),)
 
-SESSION_COOKIE_NAME = 'sessionid_product'
+SESSION_COOKIE_NAME = 'sessionid_api_gateway'
 CSRF_COOKIE_NAME = 'csrftoken_product'
 
 if DEBUG:
