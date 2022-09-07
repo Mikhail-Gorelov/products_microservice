@@ -5,7 +5,6 @@ from django.utils.text import slugify
 from treebeard.mp_tree import MP_Node
 from unidecode import unidecode
 
-from actions.choices import LikeChoice
 from channel.models import Channel
 from . import choices
 
@@ -82,11 +81,11 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-    def current_vote(self):
-        return self.product_like.aggregate(
-            count=models.Count(
-                "vote", filter=models.Q(vote=LikeChoice.LIKE))
-        )
+    # def current_vote(self):
+    #     return self.product_like.aggregate(
+    #         count=models.Count(
+    #             "vote", filter=models.Q(vote=LikeChoice.LIKE))
+    #     )
 
     class Meta:
         verbose_name = 'Product'

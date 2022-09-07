@@ -1,9 +1,8 @@
 from django.db.models import QuerySet
+from django_filters import rest_framework as filters
 
-from channel.models import Channel
 from product import models
 from product.models import Product
-from django_filters import rest_framework as filters
 
 
 class ProductsFilter(filters.FilterSet):
@@ -19,26 +18,22 @@ class ProductsFilter(filters.FilterSet):
         return queryset.order_by(filter_rating)
 
     def price_from_filter(self, queryset: QuerySet[Product], name: str, value: int):
-        channel = Channel.objects.filter(**self.request.COOKIES)
         product_variant = models.ProductVariantChannelListing.objects.filter(
-            channel__in=channel,
             cost_price__gte=value,
             visible_in_listings=True
         )
         return queryset.filter(
             variants__channel_listings__in=product_variant
-        ).distinct()
+        )
 
     def price_to_filter(self, queryset: QuerySet[Product], name: str, value: int):
-        channel = Channel.objects.filter(**self.request.COOKIES)
         product_variant = models.ProductVariantChannelListing.objects.filter(
-            channel__in=channel,
             cost_price__lte=value,
             visible_in_listings=True
         )
         return queryset.filter(
             variants__channel_listings__in=product_variant
-        ).distinct()
+        )
 
     def category_filter(self, queryset: QuerySet[Product], name: str, value: int):
         product_type = models.ProductType.objects.filter(category__id=value)

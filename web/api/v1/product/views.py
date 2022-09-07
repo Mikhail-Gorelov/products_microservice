@@ -1,3 +1,4 @@
+import ast
 from django.db.models import Subquery, OuterRef
 from rest_framework.generics import GenericAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
@@ -5,6 +6,7 @@ from rest_framework.response import Response
 
 from product import models, choices
 from product.models import Category, Product, ProductVariant
+from channel.models import Channel
 from product.pagination import BaseProductsPagination
 from . import serializers
 from .filters import ProductsFilter
@@ -16,11 +18,11 @@ class ProductsListView(ListAPIView):
     filterset_class = ProductsFilter
     pagination_class = BaseProductsPagination
     serializer_class = serializers.ProductSerializer
-    queryset = Product.objects.all()
 
-    def list(self, request, *args, **kwargs):
-        self.channel_cookie = {k: v[0] for k, v in dict(request.data).items()}
-        return super().list(request, *args, **kwargs)
+    def get_queryset(self):
+        channel_cookie = ast.literal_eval(self.request.COOKIES.get('reg_country'))
+        channel = Channel.objects.filter(**channel_cookie)
+        return Product.objects.filter(variants__channel_listings__channel__in=channel).distinct()
 
 
 class ProductsDetailView(RetrieveAPIView):
@@ -29,9 +31,8 @@ class ProductsDetailView(RetrieveAPIView):
     queryset = Product.objects.filter()
 
     def retrieve(self, request, *args, **kwargs):
-        # TODO: сделать ещё фильтрацию по регионам, чтобы всегда был get на один листинг (один вариант - один листинг)
-        self.channel_cookie = {k: v[0] for k, v in dict(request.data).items()}
-        if not ProductService.is_channel_exists(self.channel_cookie):
+        channel_cookie = ast.literal_eval(request.COOKIES.get('reg_country'))
+        if not ProductService.is_channel_exists(channel_cookie):
             return None
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -85,3 +86,9 @@ class ProductsView(GenericAPIView):
         )
         list_serializer = serializers.ProductListSerializer(queryset, many=True)
         return Response(list_serializer.data)
+
+
+class ChannelListView(ListAPIView):
+    serializer_class = serializers.ChannelSerializer
+    pagination_class = BaseProductsPagination
+    queryset = Channel.objects.filter(is_active=True)

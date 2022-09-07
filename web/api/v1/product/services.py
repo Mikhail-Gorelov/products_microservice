@@ -1,3 +1,4 @@
+import ast
 from urllib.parse import parse_qsl
 
 from django.db.models import Min, OuterRef, Subquery
@@ -99,7 +100,8 @@ class ProductService:
 
     @staticmethod
     def get_variants(obj, request: Request):
-        channel = Channel.objects.filter(**request.COOKIES)
+        channel_cookie = ast.literal_eval(request.COOKIES.get('reg_country'))
+        channel = Channel.objects.filter(**channel_cookie)
         if request.query_params.get('price_from') and request.query_params.get('price_to'):
             product_variant = models.ProductVariantChannelListing.objects.filter(
                 channel__in=channel,
