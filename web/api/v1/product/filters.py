@@ -1,3 +1,4 @@
+from django.contrib.postgres.search import SearchQuery, SearchVector, SearchRank, SearchHeadline
 from django.db.models import QuerySet
 from django_filters import rest_framework as filters
 
@@ -12,6 +13,7 @@ class ProductsFilter(filters.FilterSet):
     is_bestseller = filters.BooleanFilter(field_name='is_bestseller')
     category = filters.NumberFilter(method='category_filter')
     category_slug = filters.CharFilter(method='category_slug_filter')
+    search = filters.CharFilter(method='search_filter')
 
     def sort_by_rating_filter(self, queryset: QuerySet[Product], name: str, value: bool):
         filter_rating = '-rating' if value is True else 'created'
@@ -42,3 +44,11 @@ class ProductsFilter(filters.FilterSet):
     def category_slug_filter(self, queryset: QuerySet[Product], name: str, value: int):
         product_type = models.ProductType.objects.filter(category__slug=value)
         return queryset.filter(product_type__in=product_type)
+
+    def search_filter(self, queryset: QuerySet[Product], name: str, value: str):
+        vector = SearchVector('name', 'description')
+        query = SearchQuery(value)
+        search_headline = SearchHeadline('name', query)
+        return Product.objects.annotate(
+            rank=SearchRank(vector, query)
+        ).annotate(headline=search_headline).filter(rank__gte=0.001).order_by('-rank')
