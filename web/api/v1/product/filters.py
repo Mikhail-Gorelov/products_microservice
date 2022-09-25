@@ -49,6 +49,6 @@ class ProductsFilter(filters.FilterSet):
         vector = SearchVector('name', 'description')
         query = SearchQuery(value)
         search_headline = SearchHeadline('name', query)
-        return Product.objects.annotate(
+        return queryset.annotate(
             rank=SearchRank(vector, query)
         ).annotate(headline=search_headline).filter(rank__gte=0.001).order_by('-rank')
