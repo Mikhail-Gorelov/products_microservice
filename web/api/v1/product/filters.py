@@ -52,3 +52,15 @@ class ProductsFilter(filters.FilterSet):
         return queryset.annotate(
             rank=SearchRank(vector, query)
         ).annotate(headline=search_headline).filter(rank__gte=0.001).order_by('-rank')
+
+
+class ProductsSearchFilter(filters.FilterSet):
+    search = filters.CharFilter(method='search_filter')
+
+    def search_filter(self, queryset: QuerySet[Product], name: str, value: str):
+        vector = SearchVector('name', 'description')
+        query = SearchQuery(value)
+        search_headline = SearchHeadline('name', query)
+        return queryset.annotate(
+            rank=SearchRank(vector, query)
+        ).annotate(headline=search_headline).filter(rank__gte=0.001).order_by('-rank')

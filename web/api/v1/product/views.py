@@ -1,15 +1,15 @@
-import ast
 from django.db.models import Subquery, OuterRef
+from oauthlib.common import urldecode
 from rest_framework.generics import GenericAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from channel.models import Channel
 from product import models, choices
 from product.models import Category, Product, ProductVariant
-from channel.models import Channel
 from product.pagination import BaseProductsPagination
 from . import serializers
-from .filters import ProductsFilter
+from .filters import ProductsFilter, ProductsSearchFilter
 from .services import ProductService
 
 
@@ -20,7 +20,7 @@ class ProductsListView(ListAPIView):
     serializer_class = serializers.ProductSerializer
 
     def get_queryset(self):
-        channel_cookie = ast.literal_eval(self.request.COOKIES.get('reg_country'))
+        channel_cookie = dict(urldecode(self.request.COOKIES.get('reg_country')))
         channel = Channel.objects.filter(**channel_cookie)
         return Product.objects.filter(variants__channel_listings__channel__in=channel).distinct()
 
@@ -31,7 +31,7 @@ class ProductsDetailView(RetrieveAPIView):
     queryset = Product.objects.filter()
 
     def retrieve(self, request, *args, **kwargs):
-        channel_cookie = ast.literal_eval(request.COOKIES.get('reg_country'))
+        channel_cookie = dict(urldecode(self.request.COOKIES.get('reg_country')))
         if not ProductService.is_channel_exists(channel_cookie):
             return None
         instance = self.get_object()
@@ -89,6 +89,17 @@ class ProductsView(GenericAPIView):
 
 
 class ChannelListView(ListAPIView):
+    permission_classes = (AllowAny,)
     serializer_class = serializers.ChannelSerializer
-    pagination_class = BaseProductsPagination
     queryset = Channel.objects.filter(is_active=True)
+
+
+class SearchProductView(ListAPIView):
+    permission_classes = (AllowAny,)
+    filterset_class = ProductsSearchFilter
+    serializer_class = serializers.ProductSearchSerializer
+
+    def get_queryset(self):
+        channel_cookie = dict(urldecode(self.request.COOKIES.get('reg_country')))
+        channel = Channel.objects.filter(**channel_cookie)
+        return Product.objects.filter(variants__channel_listings__channel__in=channel).distinct()

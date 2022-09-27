@@ -130,3 +130,9 @@ class ChannelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Channel
         fields = ('id', 'name', 'slug', 'currency_code', 'country')
+
+
+class ProductSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Product
+        fields = ("name",)

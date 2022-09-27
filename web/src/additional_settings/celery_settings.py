@@ -26,12 +26,21 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
 }
 
 celery_exchange = Exchange('celery', type='direct')  # topic, fanout
+generic_exchange = Exchange('generic', type='topic')  # topic, fanout
 
 CELERY_TASK_ROUTES = {
-    '*': {'queue': 'celery'},
+    # '*': {'queue': 'celery'},
+    # '*': {'queue': 'update_price'},
+    'update_prices': {'exchange': 'generic'},
 }
 
-CELERY_TASK_QUEUES = (Queue('celery', exchange=celery_exchange, queue_arguments={'x-queue-mode': 'lazy'}),)
-
+CELERY_TASK_QUEUES = (
+    Queue('celery', exchange=generic_exchange, queue_arguments={'x-queue-mode': 'lazy'}),
+    Queue(
+        name='update_price',
+        exchange=generic_exchange,
+        queue_arguments={'x-queue-mode': 'lazy'},
+    ),
+)
 
 CELERY_BEAT_SCHEDULE = {}
