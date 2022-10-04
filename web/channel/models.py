@@ -5,9 +5,9 @@ from django_countries.fields import CountryField
 
 
 class Channel(models.Model):
-    name = models.CharField(max_length=250, unique=True)
+    name = models.CharField(max_length=250)
     is_active = models.BooleanField(default=False)
-    slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
+    slug = models.SlugField(max_length=255, allow_unicode=True)
     currency_code = models.CharField(max_length=20)
     country = CountryField()
 
@@ -17,6 +17,7 @@ class Channel(models.Model):
         return super().save(*args, **kwargs)
 
     class Meta:
+        unique_together = ("country", "currency_code")
         verbose_name = 'Channel'
         verbose_name_plural = 'Channels'
 
