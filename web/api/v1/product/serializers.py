@@ -1,6 +1,7 @@
 from django.conf import settings
 from rest_framework import serializers
 
+from actions.models import Like
 from api.v1.product.services import ProductService
 from product import models
 from product.models import Category
@@ -25,6 +26,7 @@ class ProductSerializer(serializers.ModelSerializer):
     media = serializers.SerializerMethodField('get_media')
     full_price = serializers.SerializerMethodField('get_full_price')
     variants_count = serializers.SerializerMethodField('get_variants_count')
+    is_liked = serializers.SerializerMethodField('get_is_liked')
 
     def get_media(self, obj):
         return ProductService.get_media_of_product(obj=obj, request=self.context['request'])
@@ -35,9 +37,14 @@ class ProductSerializer(serializers.ModelSerializer):
     def get_variants_count(self, obj):
         return ProductService.get_variants_count(obj=obj, request=self.context['request'])
 
+    def get_is_liked(self, obj):
+        if not self.context['request'].remote_user:
+            return Like.objects.filter(product=obj).exists()
+        return Like.objects.filter(user_id=self.context['request'].remote_user.id, product=obj).exists()
+
     class Meta:
         model = models.Product
-        fields = ("id", "name", "media", "full_price", "rating", "description", "variants_count")
+        fields = ("id", "name", "media", "full_price", "rating", "description", "variants_count", "is_liked")
 
 
 class ProductTypeSerializer(serializers.ModelSerializer):

@@ -1,10 +1,8 @@
-from django import dispatch
-from django.db.models.signals import post_save, pre_save
-
-from src.celery import app
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from product.models import ProductVariantChannelListing
+from src.celery import app
 
 
 @receiver(post_save, sender=ProductVariantChannelListing)
