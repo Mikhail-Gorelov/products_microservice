@@ -42,11 +42,6 @@ class SetChannelCookies:
     def __call__(self, request: 'HttpRequest'):
         self.set_cookies(request=request)
         response: 'Response' = self.get_response(request)
-        value = {
-            'country': 'RU',
-            'currency_code': 'RUB',
-        }
-        # response.set_cookie('channel', urlencode(value))
         return response
 
 

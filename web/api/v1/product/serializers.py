@@ -119,12 +119,29 @@ class ProductsSerializer(serializers.Serializer):
 
 
 class ProductVariantDetailSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.name')
-    variant_name = serializers.CharField(source='name')
+    media = serializers.SerializerMethodField()
+    full_price = serializers.SerializerMethodField()
+    description = serializers.CharField(source='product.description')
+    is_liked = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+
+    def get_media(self, obj):
+        return settings.MEDIA_URL + str(obj.variant_media.all().first().media.media_file)
+
+    def get_full_price(self, obj):
+        return obj.channel_listings.all().first().cost_price
+
+    def get_is_liked(self, obj):
+        if not self.context['request'].remote_user:
+            return Like.objects.filter(product=obj.product).exists()
+        return Like.objects.filter(user_id=self.context['request'].remote_user.id, product=obj.product).exists()
+
+    def get_rating(self, obj):
+        return obj.product.rating
 
     class Meta:
         model = models.ProductVariant
-        fields = ('id', 'product_name', 'variant_name', 'product_sku')
+        fields = ('id', 'name', 'media', 'full_price', 'description', 'is_liked', 'rating')
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -143,3 +160,7 @@ class ProductSearchSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Product
         fields = ("name",)
+
+
+class TotalPositionsSerializer(serializers.Serializer):
+    variant_ids = serializers.ListField(child=serializers.IntegerField())

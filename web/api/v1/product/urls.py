@@ -14,4 +14,6 @@ urlpatterns = [
     path('channel-list/', views.ChannelListView.as_view(), name='channel-list'),
     path('product-variant/<int:pk>/', views.ProductsVariantView.as_view(), name='product-variant'),
     path('search-products/', views.SearchProductView.as_view(), name='search-products'),
+    path('total-sum/', views.TotalSumView.as_view(), name='total-sum'),
+    path('total-weight/', views.TotalWeightView.as_view(), name='total-weight'),
 ]

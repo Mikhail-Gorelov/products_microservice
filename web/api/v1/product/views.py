@@ -1,4 +1,4 @@
-from django.db.models import Subquery, OuterRef
+from django.db.models import Subquery, OuterRef, Sum
 from oauthlib.common import urldecode
 from rest_framework.generics import GenericAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
@@ -103,3 +103,30 @@ class SearchProductView(ListAPIView):
         channel_cookie = dict(urldecode(self.request.COOKIES.get('reg_country')))
         channel = Channel.objects.filter(**channel_cookie)
         return Product.objects.filter(variants__channel_listings__channel__in=channel).distinct()
+
+
+class TotalSumView(GenericAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = serializers.TotalPositionsSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        variants = models.ProductVariant.objects.filter(id__in=serializer.data.get('variant_ids'))
+        channel_listing = models.ProductVariantChannelListing.objects.filter(
+            product_variant__in=variants
+        ).aggregate(Sum('cost_price'))
+        return Response({'total_sum': channel_listing.get('cost_price__sum')})
+
+
+class TotalWeightView(GenericAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = serializers.TotalPositionsSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        variants = models.ProductVariant.objects.filter(
+            id__in=serializer.data.get('variant_ids')
+        ).aggregate(Sum('weight'))
+        return Response({'total_weight': variants.get('weight__sum')})
