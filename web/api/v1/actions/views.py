@@ -18,6 +18,16 @@ class AssessmentView(GenericAPIView):
         return Response(data, status=status.HTTP_201_CREATED)
 
 
+class AssessmentVariantView(GenericAPIView):
+    serializer_class = serializers.AssessmentVariantSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.save()
+        return Response(data, status=status.HTTP_201_CREATED)
+
+
 class AssessmentShowView(ListAPIView):
     serializer_class = serializers.AssessmentShowSerializer
     pagination_class = LikeNumberPagination

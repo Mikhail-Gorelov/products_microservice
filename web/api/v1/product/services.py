@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from channel.models import Channel
 from product import models
+from product.models import ProductVariant
 
 
 class ProductService:
@@ -144,7 +145,9 @@ class ProductService:
             slug=Subquery(slug),
             variant_media=Subquery(variant_media)
         )
-        return serializer_input
+        return ProductVariant.objects.filter(
+            id__in=[i[0] for i in list(serializer_input.values_list('product_variant'))]
+        )
 
     @staticmethod
     def get_media_for_variants(obj, request: Request):

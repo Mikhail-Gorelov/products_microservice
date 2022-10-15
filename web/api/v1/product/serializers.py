@@ -9,17 +9,20 @@ from channel.models import Channel
 
 
 class VariantsSerializer(serializers.ModelSerializer):
-    full_price = serializers.DecimalField(decimal_places=2, max_digits=8)
+    full_price = serializers.SerializerMethodField('get_full_price')
     weight = serializers.DecimalField(decimal_places=1, max_digits=5)
     slug = serializers.SlugField(max_length=255)
     variant_media = serializers.SerializerMethodField('get_variant_media')
 
+    def get_full_price(self, obj):
+        return obj.channel_listings.all().first().cost_price
+
     def get_variant_media(self, obj):
-        return settings.MEDIA_URL + obj.variant_media
+        return settings.MEDIA_URL + str(obj.variant_media.all().first().media.media_file)
 
     class Meta:
         model = models.ProductVariant
-        fields = ("id", "name", "weight", "slug", "full_price", "variant_media")
+        fields = ("id", "name", "weight", "full_price", "slug", "variant_media")
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -119,11 +122,14 @@ class ProductsSerializer(serializers.Serializer):
 
 
 class ProductVariantDetailSerializer(serializers.ModelSerializer):
+    product_id = serializers.SerializerMethodField()
     media = serializers.SerializerMethodField()
     full_price = serializers.SerializerMethodField()
-    description = serializers.CharField(source='product.description')
     is_liked = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
+
+    def get_product_id(self, obj):
+        return obj.product.id
 
     def get_media(self, obj):
         return settings.MEDIA_URL + str(obj.variant_media.all().first().media.media_file)
@@ -141,7 +147,7 @@ class ProductVariantDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.ProductVariant
-        fields = ('id', 'name', 'media', 'full_price', 'description', 'is_liked', 'rating')
+        fields = ('id', 'product_id', 'name', 'media', 'full_price', 'is_liked', 'rating', 'weight')
 
 
 class CategorySerializer(serializers.ModelSerializer):
