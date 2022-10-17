@@ -81,12 +81,6 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-    # def current_vote(self):
-    #     return self.product_like.aggregate(
-    #         count=models.Count(
-    #             "vote", filter=models.Q(vote=LikeChoice.LIKE))
-    #     )
-
     class Meta:
         verbose_name = 'Product'
         verbose_name_plural = 'Products'

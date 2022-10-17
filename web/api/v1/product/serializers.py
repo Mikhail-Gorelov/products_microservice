@@ -2,6 +2,7 @@ from django.conf import settings
 from rest_framework import serializers
 
 from actions.models import Like
+from oauthlib.common import urldecode
 from api.v1.product.services import ProductService
 from product import models
 from product.models import Category
@@ -30,6 +31,7 @@ class ProductSerializer(serializers.ModelSerializer):
     full_price = serializers.SerializerMethodField('get_full_price')
     variants_count = serializers.SerializerMethodField('get_variants_count')
     is_liked = serializers.SerializerMethodField('get_is_liked')
+    currency = serializers.SerializerMethodField('get_currency')
 
     def get_media(self, obj):
         return ProductService.get_media_of_product(obj=obj, request=self.context['request'])
@@ -45,9 +47,16 @@ class ProductSerializer(serializers.ModelSerializer):
             return Like.objects.filter(product=obj).exists()
         return Like.objects.filter(user_id=self.context['request'].remote_user.id, product=obj).exists()
 
+    def get_currency(self, obj):
+        if reg_country := dict(urldecode(self.context['request'].COOKIES.get('reg_country'))):
+            return reg_country.get('currency_code')
+        return None
+
     class Meta:
         model = models.Product
-        fields = ("id", "name", "media", "full_price", "rating", "description", "variants_count", "is_liked")
+        fields = (
+            "id", "name", "media", "full_price", "rating", "description", "variants_count", "is_liked", "currency"
+        )
 
 
 class ProductTypeSerializer(serializers.ModelSerializer):
@@ -60,6 +69,7 @@ class ProductDetailUnitSerializer(serializers.ModelSerializer):
     breadcrumbs = serializers.SerializerMethodField('get_breadcrumbs')
     media = serializers.SerializerMethodField('get_media')
     variants = serializers.SerializerMethodField('get_variants')
+    currency = serializers.SerializerMethodField('get_currency')
 
     def get_breadcrumbs(self, obj):
         category: Category = obj.product_type.category
@@ -76,9 +86,14 @@ class ProductDetailUnitSerializer(serializers.ModelSerializer):
     def get_variants(self, obj):
         return VariantsSerializer(ProductService.get_variants(obj=obj, request=self.context['request']), many=True).data
 
+    def get_currency(self, obj):
+        if reg_country := dict(urldecode(self.context['request'].COOKIES.get('reg_country'))):
+            return reg_country.get('currency_code')
+        return None
+
     class Meta:
         model = models.Product
-        fields = ("id", "description", "breadcrumbs", "rating", "media", "variants")
+        fields = ("id", "currency", "description", "breadcrumbs", "rating", "media", "variants")
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -127,6 +142,7 @@ class ProductVariantDetailSerializer(serializers.ModelSerializer):
     full_price = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
+    currency = serializers.SerializerMethodField()
 
     def get_product_id(self, obj):
         return obj.product.id
@@ -145,9 +161,14 @@ class ProductVariantDetailSerializer(serializers.ModelSerializer):
     def get_rating(self, obj):
         return obj.product.rating
 
+    def get_currency(self, obj):
+        if reg_country := dict(urldecode(self.context['request'].COOKIES.get('reg_country'))):
+            return reg_country.get('currency_code')
+        return None
+
     class Meta:
         model = models.ProductVariant
-        fields = ('id', 'product_id', 'name', 'media', 'full_price', 'is_liked', 'rating', 'weight')
+        fields = ('id', 'product_id', 'name', 'media', 'full_price', 'is_liked', 'rating', 'weight', 'currency')
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -170,3 +191,8 @@ class ProductSearchSerializer(serializers.ModelSerializer):
 
 class TotalPositionsSerializer(serializers.Serializer):
     variant_ids = serializers.ListField(child=serializers.IntegerField())
+
+
+class TotalWeightSerializer(serializers.Serializer):
+    variant_id = serializers.IntegerField()
+    quantity = serializers.IntegerField()

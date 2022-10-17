@@ -1,4 +1,7 @@
-from django.db.models import Subquery, OuterRef, Sum
+import json
+from decimal import Decimal
+
+from django.db.models import Subquery, OuterRef, Sum, Case, When
 from oauthlib.common import urldecode
 from rest_framework.generics import GenericAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
@@ -113,20 +116,26 @@ class TotalSumView(GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         variants = models.ProductVariant.objects.filter(id__in=serializer.data.get('variant_ids'))
-        channel_listing = models.ProductVariantChannelListing.objects.filter(
-            product_variant__in=variants
-        ).aggregate(Sum('cost_price'))
-        return Response({'total_sum': channel_listing.get('cost_price__sum')})
+        id_s = list(variants.values_list('id', flat=True))
+        values = list(variants.values_list('channel_listings__cost_price', flat=True))
+        zip_iterator = dict(zip(id_s, values))
+        return Response(zip_iterator)
 
 
 class TotalWeightView(GenericAPIView):
     permission_classes = (AllowAny,)
-    serializer_class = serializers.TotalPositionsSerializer
+    serializer_class = serializers.TotalWeightSerializer
 
     def post(self, request):
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
-        variants = models.ProductVariant.objects.filter(
-            id__in=serializer.data.get('variant_ids')
-        ).aggregate(Sum('weight'))
-        return Response({'total_weight': variants.get('weight__sum')})
+        converted_list = json.loads(json.dumps(serializer.data))
+        variant_ids = [d['variant_id'] for d in converted_list]
+        quantity = [d['quantity'] for d in converted_list]
+        preserved = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(variant_ids)])
+        queryset = ProductVariant.objects.filter(
+            pk__in=variant_ids
+        ).order_by(preserved).values_list('weight', flat=True)
+        product_variants = [Decimal('0') if v is None else v for v in queryset]
+        multiplied_list = [a * b for a, b in zip(product_variants, quantity)]
+        return Response({'total_weight': sum(multiplied_list)})
