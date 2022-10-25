@@ -194,5 +194,10 @@ class TotalPositionsSerializer(serializers.Serializer):
 
 
 class TotalWeightSerializer(serializers.Serializer):
-    variant_id = serializers.IntegerField()
-    quantity = serializers.IntegerField()
+    variant_id = serializers.IntegerField(min_value=1)
+    quantity = serializers.IntegerField(min_value=1)
+
+
+class ProductCheckoutSerializer(serializers.Serializer):
+    product_variant_id = serializers.IntegerField(min_value=1)
+    quantity = serializers.IntegerField(min_value=1)

@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.db.models import Subquery, OuterRef, Sum, Case, When
 from oauthlib.common import urldecode
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import GenericAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -67,6 +68,48 @@ class ProductListView(ListAPIView):
     serializer_class = serializers.ProductDetailUnitSerializer
     pagination_class = BaseProductsPagination
     queryset = Product.objects.all()
+
+
+class ProductCheckoutView(GenericAPIView):
+    serializer_class = serializers.ProductCheckoutSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        product_variants = [d['product_variant_id'] for d in serializer.data]
+        queryset = ProductVariant.objects.filter(id__in=product_variants)  # !!!
+        channel_id = dict(urldecode(request.COOKIES.get('reg_country'))).get('id')
+        channel_model = models.Channel.objects.get(id=channel_id)
+        prices = []
+        total_price = 0
+        channel = dict(urldecode(request.COOKIES.get('reg_country')))
+        broken_variants = []
+        for unit in serializer.data:
+            try:
+                product = ProductVariant.objects.get(
+                    id=unit['product_variant_id']
+                )
+            except ProductVariant.DoesNotExist:
+                broken_variants.append(unit)
+                continue
+
+            channel_listing = product.channel_listings.get(channel_id=channel['id'])
+            data = {
+                'product_variant_id': product.id,
+                'quantity': unit['quantity'],
+                'unit_price': channel_listing.cost_price,
+                'price': channel_listing.cost_price * unit['quantity'],
+            }
+            total_price += data['price']
+            prices.append(data)
+        if broken_variants:
+            raise ValidationError({'broken_variants': broken_variants})
+        response_data = {
+            'price_list': prices,
+            'total_sum': total_price,
+            'currency': channel_model.currency_code
+        }
+        return Response(response_data)
 
 
 class SecureView(GenericAPIView):
