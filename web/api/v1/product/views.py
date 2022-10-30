@@ -2,8 +2,7 @@ import json
 from decimal import Decimal
 
 from django.db.models import Subquery, OuterRef, Sum, Case, When
-from oauthlib.common import urldecode
-from rest_framework.exceptions import ValidationError
+from urllib.parse import parse_qsl
 from rest_framework.generics import GenericAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -14,7 +13,7 @@ from product.models import Category, Product, ProductVariant
 from product.pagination import BaseProductsPagination
 from . import serializers
 from .filters import ProductsFilter, ProductsSearchFilter
-from .services import ProductService
+from .services import ProductService, CheckoutService
 
 
 class ProductsListView(ListAPIView):
@@ -24,7 +23,7 @@ class ProductsListView(ListAPIView):
     serializer_class = serializers.ProductSerializer
 
     def get_queryset(self):
-        channel_cookie = dict(urldecode(self.request.COOKIES.get('reg_country')))
+        channel_cookie = dict(parse_qsl(self.request.COOKIES.get('reg_country')))
         channel = Channel.objects.filter(**channel_cookie)
         return Product.objects.filter(variants__channel_listings__channel__in=channel).distinct()
 
@@ -35,7 +34,7 @@ class ProductsDetailView(RetrieveAPIView):
     queryset = Product.objects.filter()
 
     def retrieve(self, request, *args, **kwargs):
-        channel_cookie = dict(urldecode(self.request.COOKIES.get('reg_country')))
+        channel_cookie = dict(parse_qsl(self.request.COOKIES.get('reg_country')))
         if not ProductService.is_channel_exists(channel_cookie):
             return None
         instance = self.get_object()
@@ -70,46 +69,28 @@ class ProductListView(ListAPIView):
     queryset = Product.objects.all()
 
 
+class ProductVariantListView(GenericAPIView):
+    serializer_class = serializers.ProductVariantListSerializer
+    pagination_class = None
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        queryset = ProductVariant.objects.filter(id__in=serializer.data['product_variants_id'])
+        output_serializer = serializers.ProductVariantListResponseSerializer(queryset, many=True)
+        return Response(output_serializer.data)
+
+
 class ProductCheckoutView(GenericAPIView):
     serializer_class = serializers.ProductCheckoutSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
-        product_variants = [d['product_variant_id'] for d in serializer.data]
-        queryset = ProductVariant.objects.filter(id__in=product_variants)  # !!!
-        channel_id = dict(urldecode(request.COOKIES.get('reg_country'))).get('id')
-        channel_model = models.Channel.objects.get(id=channel_id)
-        prices = []
-        total_price = 0
-        channel = dict(urldecode(request.COOKIES.get('reg_country')))
-        broken_variants = []
-        for unit in serializer.data:
-            try:
-                product = ProductVariant.objects.get(
-                    id=unit['product_variant_id']
-                )
-            except ProductVariant.DoesNotExist:
-                broken_variants.append(unit)
-                continue
-
-            channel_listing = product.channel_listings.get(channel_id=channel['id'])
-            data = {
-                'product_variant_id': product.id,
-                'quantity': unit['quantity'],
-                'unit_price': channel_listing.cost_price,
-                'price': channel_listing.cost_price * unit['quantity'],
-            }
-            total_price += data['price']
-            prices.append(data)
-        if broken_variants:
-            raise ValidationError({'broken_variants': broken_variants})
-        response_data = {
-            'price_list': prices,
-            'total_sum': total_price,
-            'currency': channel_model.currency_code
-        }
-        return Response(response_data)
+        checkout_service = CheckoutService(request=request)
+        # queryset = checkout_service.from_list_of_dicts_get_variants('product_variant_id', serializer.data)  # !!!
+        # print(list(queryset.values('product__id')), serializer.data)
+        return checkout_service.form_checkout_data(serializer_data=serializer.data)
 
 
 class SecureView(GenericAPIView):
@@ -146,7 +127,7 @@ class SearchProductView(ListAPIView):
     serializer_class = serializers.ProductSearchSerializer
 
     def get_queryset(self):
-        channel_cookie = dict(urldecode(self.request.COOKIES.get('reg_country')))
+        channel_cookie = dict(parse_qsl(self.request.COOKIES.get('reg_country')))
         channel = Channel.objects.filter(**channel_cookie)
         return Product.objects.filter(variants__channel_listings__channel__in=channel).distinct()
 

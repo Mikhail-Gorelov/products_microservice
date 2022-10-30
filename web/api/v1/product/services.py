@@ -1,14 +1,80 @@
+from decimal import Decimal
 from urllib.parse import parse_qsl
 
 from django.conf import settings
 from django.db.models import Min, OuterRef, Subquery
-from oauthlib.common import urldecode
+from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from channel.models import Channel
 from product import models
 from product.models import ProductVariant
+
+
+class CheckoutService:
+    def __init__(self, *, request: Request):
+        self.request = request
+
+    def check_broken_variants(self, broken_variants: list):
+        if broken_variants:
+            raise ValidationError({'broken_variants': broken_variants})
+
+    def from_list_of_dicts_get_key_values(self, key: str, list_of_dicts: list[dict]):
+        return [d[key] for d in list_of_dicts]
+
+    def from_list_of_dicts_get_variants(self, key: str, list_of_dicts: list[dict]):
+        product_variants = self.from_list_of_dicts_get_key_values(key=key, list_of_dicts=list_of_dicts)
+        queryset = ProductVariant.objects.filter(id__in=product_variants)
+        return queryset
+
+    def from_channel_cookie_get_id(self):
+        return dict(parse_qsl(self.request.COOKIES.get('reg_country'))).get('id')
+
+    def from_channel_cookie_get_model(self):
+        channel_id = self.from_channel_cookie_get_id()
+        channel_model = models.Channel.objects.get(id=channel_id)
+        return channel_model
+
+    def form_price_list(self, product_variant_id: int, quantity: int, unit_price: Decimal):
+        return {
+            'product_variant_id': product_variant_id,
+            'quantity': quantity,
+            'unit_price': unit_price,
+            'price': unit_price * quantity,
+        }
+
+    def form_response(self, price_list: list, total_sum: int, currency: str):
+        return Response({
+            'price_list': price_list,
+            'total_sum': total_sum,
+            'currency': currency
+        })
+
+    def form_checkout_data(self, serializer_data: list[dict]):
+        prices = []
+        total_price = 0
+        broken_variants = []
+        for unit in serializer_data:
+            try:
+                product = ProductVariant.objects.get(
+                    id=unit['product_variant_id']
+                )
+            except ProductVariant.DoesNotExist:
+                broken_variants.append(unit)
+                continue
+
+            channel_listing = product.channel_listings.get(channel_id=self.from_channel_cookie_get_id())
+            data = self.form_price_list(
+                product_variant_id=product.id,
+                quantity=unit['quantity'],
+                unit_price=channel_listing.cost_price
+            )
+            total_price += data['price']
+            prices.append(data)
+        self.check_broken_variants(broken_variants=broken_variants)
+        channel_model = self.from_channel_cookie_get_model()
+        return self.form_response(price_list=prices, total_sum=total_price, currency=channel_model.currency_code)
 
 
 class ProductService:
@@ -101,7 +167,7 @@ class ProductService:
 
     @staticmethod
     def get_variants(obj, request: Request):
-        channel_cookie = dict(urldecode(request.COOKIES.get('reg_country')))
+        channel_cookie = dict(parse_qsl(request.COOKIES.get('reg_country')))
         channel = Channel.objects.filter(**channel_cookie)
         if request.query_params.get('price_from') and request.query_params.get('price_to'):
             product_variant = models.ProductVariantChannelListing.objects.filter(

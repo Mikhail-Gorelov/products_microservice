@@ -2,7 +2,7 @@ from django.conf import settings
 from rest_framework import serializers
 
 from actions.models import Like
-from oauthlib.common import urldecode
+from urllib.parse import parse_qsl
 from api.v1.product.services import ProductService
 from product import models
 from product.models import Category
@@ -48,7 +48,7 @@ class ProductSerializer(serializers.ModelSerializer):
         return Like.objects.filter(user_id=self.context['request'].remote_user.id, product=obj).exists()
 
     def get_currency(self, obj):
-        if reg_country := dict(urldecode(self.context['request'].COOKIES.get('reg_country'))):
+        if reg_country := dict(parse_qsl(self.context['request'].COOKIES.get('reg_country'))):
             return reg_country.get('currency_code')
         return None
 
@@ -87,7 +87,7 @@ class ProductDetailUnitSerializer(serializers.ModelSerializer):
         return VariantsSerializer(ProductService.get_variants(obj=obj, request=self.context['request']), many=True).data
 
     def get_currency(self, obj):
-        if reg_country := dict(urldecode(self.context['request'].COOKIES.get('reg_country'))):
+        if reg_country := dict(parse_qsl(self.context['request'].COOKIES.get('reg_country'))):
             return reg_country.get('currency_code')
         return None
 
@@ -162,7 +162,7 @@ class ProductVariantDetailSerializer(serializers.ModelSerializer):
         return obj.product.rating
 
     def get_currency(self, obj):
-        if reg_country := dict(urldecode(self.context['request'].COOKIES.get('reg_country'))):
+        if reg_country := dict(parse_qsl(self.context['request'].COOKIES.get('reg_country'))):
             return reg_country.get('currency_code')
         return None
 
@@ -201,3 +201,18 @@ class TotalWeightSerializer(serializers.Serializer):
 class ProductCheckoutSerializer(serializers.Serializer):
     product_variant_id = serializers.IntegerField(min_value=1)
     quantity = serializers.IntegerField(min_value=1)
+
+
+class ProductVariantListSerializer(serializers.Serializer):
+    product_variants_id = serializers.ListSerializer(child=serializers.IntegerField())
+
+
+class ProductVariantListResponseSerializer(serializers.ModelSerializer):
+    media = serializers.SerializerMethodField()
+
+    def get_media(self, obj):
+        return settings.MEDIA_URL + str(obj.variant_media.all().first().media.media_file)
+
+    class Meta:
+        model = models.ProductVariant
+        fields = ('id', 'media')
