@@ -88,8 +88,6 @@ class ProductCheckoutView(GenericAPIView):
         serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
         checkout_service = CheckoutService(request=request)
-        # queryset = checkout_service.from_list_of_dicts_get_variants('product_variant_id', serializer.data)  # !!!
-        # print(list(queryset.values('product__id')), serializer.data)
         return checkout_service.form_checkout_data(serializer_data=serializer.data)
 
 

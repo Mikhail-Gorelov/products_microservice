@@ -6,10 +6,25 @@ from django.db.models import Min, OuterRef, Subquery
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
-
+from dataclasses import dataclass, asdict
 from channel.models import Channel
 from product import models
 from product.models import ProductVariant
+
+
+@dataclass
+class PriceList:
+    product_variant_id: int
+    quantity: int
+    unit_price: Decimal
+    price: Decimal
+
+
+@dataclass
+class ResponseData:
+    price_list: list
+    total_sum: int
+    currency: str
 
 
 class CheckoutService:
@@ -23,11 +38,6 @@ class CheckoutService:
     def from_list_of_dicts_get_key_values(self, key: str, list_of_dicts: list[dict]):
         return [d[key] for d in list_of_dicts]
 
-    def from_list_of_dicts_get_variants(self, key: str, list_of_dicts: list[dict]):
-        product_variants = self.from_list_of_dicts_get_key_values(key=key, list_of_dicts=list_of_dicts)
-        queryset = ProductVariant.objects.filter(id__in=product_variants)
-        return queryset
-
     def from_channel_cookie_get_id(self):
         return dict(parse_qsl(self.request.COOKIES.get('reg_country'))).get('id')
 
@@ -37,19 +47,23 @@ class CheckoutService:
         return channel_model
 
     def form_price_list(self, product_variant_id: int, quantity: int, unit_price: Decimal):
-        return {
-            'product_variant_id': product_variant_id,
-            'quantity': quantity,
-            'unit_price': unit_price,
-            'price': unit_price * quantity,
-        }
+        return asdict(
+            PriceList(
+                product_variant_id=product_variant_id,
+                quantity=quantity,
+                unit_price=unit_price,
+                price=unit_price * quantity
+            )
+        )
 
     def form_response(self, price_list: list, total_sum: int, currency: str):
-        return Response({
-            'price_list': price_list,
-            'total_sum': total_sum,
-            'currency': currency
-        })
+        return Response(asdict(
+            ResponseData(
+                price_list=price_list,
+                total_sum=total_sum,
+                currency=currency,
+            )
+        ))
 
     def form_checkout_data(self, serializer_data: list[dict]):
         prices = []
