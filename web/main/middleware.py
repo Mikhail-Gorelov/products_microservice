@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING, Optional
-from urllib.parse import urlencode
+from urllib.parse import parse_qsl
 
 import pytz
 from django.conf import settings
@@ -7,7 +7,8 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 
-from main.services import RemoteUser
+from channel.models import Channel
+from main.services import RemoteUser, ChannelCookie
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -55,4 +56,19 @@ class RemoteUserMiddleware:
             request.remote_user = RemoteUser(id=request.user.pk, session=request.session.session_key)
         if user_id := request.headers.get('Remote-User'):
             request.remote_user = RemoteUser(id=int(user_id), session=request.session.session_key)
+        return self.get_response(request)
+
+
+class ChannelCookieMiddleware:
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request: 'HttpRequest'):
+        if reg_country := request.COOKIES.get('reg_country'):
+            channel_model_dict = dict(parse_qsl(reg_country))
+        else:
+            channel_model = Channel.objects.all()
+            channel_model_dict = channel_model.values('id', 'name', 'slug', 'currency_code', 'country')[0]
+        request.channel = ChannelCookie(**channel_model_dict)
         return self.get_response(request)

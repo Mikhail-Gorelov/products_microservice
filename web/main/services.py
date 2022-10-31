@@ -6,3 +6,12 @@ from typing import Optional
 class RemoteUser:
     id: int
     session: Optional[str]
+
+
+@dataclass
+class ChannelCookie:
+    id: int
+    name: str
+    slug: str
+    currency_code: str
+    country: str

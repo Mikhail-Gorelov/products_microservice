@@ -2,7 +2,6 @@ import json
 from decimal import Decimal
 
 from django.db.models import Subquery, OuterRef, Sum, Case, When
-from urllib.parse import parse_qsl
 from rest_framework.generics import GenericAPIView, RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -23,8 +22,8 @@ class ProductsListView(ListAPIView):
     serializer_class = serializers.ProductSerializer
 
     def get_queryset(self):
-        channel_cookie = dict(parse_qsl(self.request.COOKIES.get('reg_country')))
-        channel = Channel.objects.filter(**channel_cookie)
+        channel_id = self.request.channel.id
+        channel = Channel.objects.filter(id=channel_id)
         return Product.objects.filter(variants__channel_listings__channel__in=channel).distinct()
 
 
@@ -34,8 +33,8 @@ class ProductsDetailView(RetrieveAPIView):
     queryset = Product.objects.filter()
 
     def retrieve(self, request, *args, **kwargs):
-        channel_cookie = dict(parse_qsl(self.request.COOKIES.get('reg_country')))
-        if not ProductService.is_channel_exists(channel_cookie):
+        channel_id = self.request.channel.id
+        if not ProductService.is_channel_exists(channel_id=channel_id):
             return None
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -125,8 +124,8 @@ class SearchProductView(ListAPIView):
     serializer_class = serializers.ProductSearchSerializer
 
     def get_queryset(self):
-        channel_cookie = dict(parse_qsl(self.request.COOKIES.get('reg_country')))
-        channel = Channel.objects.filter(**channel_cookie)
+        channel_id = self.request.channel.id
+        channel = Channel.objects.filter(id=channel_id)
         return Product.objects.filter(variants__channel_listings__channel__in=channel).distinct()
 
 

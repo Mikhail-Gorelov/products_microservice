@@ -38,12 +38,8 @@ class CheckoutService:
     def from_list_of_dicts_get_key_values(self, key: str, list_of_dicts: list[dict]):
         return [d[key] for d in list_of_dicts]
 
-    def from_channel_cookie_get_id(self):
-        return dict(parse_qsl(self.request.COOKIES.get('reg_country'))).get('id')
-
     def from_channel_cookie_get_model(self):
-        channel_id = self.from_channel_cookie_get_id()
-        channel_model = models.Channel.objects.get(id=channel_id)
+        channel_model = models.Channel.objects.get(id=self.request.channel.id)
         return channel_model
 
     def form_price_list(self, product_variant_id: int, quantity: int, unit_price: Decimal):
@@ -78,7 +74,7 @@ class CheckoutService:
                 broken_variants.append(unit)
                 continue
 
-            channel_listing = product.channel_listings.get(channel_id=self.from_channel_cookie_get_id())
+            channel_listing = product.channel_listings.get(channel_id=self.request.channel.id)
             data = self.form_price_list(
                 product_variant_id=product.id,
                 quantity=unit['quantity'],
@@ -97,8 +93,8 @@ class ProductService:
         return dict(parse_qsl(cookie))
 
     @staticmethod
-    def is_channel_exists(channel_cookie: dict) -> Response:
-        return Channel.objects.filter(**channel_cookie).exists()
+    def is_channel_exists(channel_id: int) -> Response:
+        return Channel.objects.filter(id=channel_id).exists()
 
     @staticmethod
     def get_full_price_of_product(obj, request: Request):
@@ -181,8 +177,8 @@ class ProductService:
 
     @staticmethod
     def get_variants(obj, request: Request):
-        channel_cookie = dict(parse_qsl(request.COOKIES.get('reg_country')))
-        channel = Channel.objects.filter(**channel_cookie)
+        channel_id = request.channel.id
+        channel = Channel.objects.filter(id=channel_id)
         if request.query_params.get('price_from') and request.query_params.get('price_to'):
             product_variant = models.ProductVariantChannelListing.objects.filter(
                 channel__in=channel,

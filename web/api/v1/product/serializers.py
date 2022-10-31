@@ -2,7 +2,6 @@ from django.conf import settings
 from rest_framework import serializers
 
 from actions.models import Like
-from urllib.parse import parse_qsl
 from api.v1.product.services import ProductService
 from product import models
 from product.models import Category
@@ -48,9 +47,7 @@ class ProductSerializer(serializers.ModelSerializer):
         return Like.objects.filter(user_id=self.context['request'].remote_user.id, product=obj).exists()
 
     def get_currency(self, obj):
-        if reg_country := dict(parse_qsl(self.context['request'].COOKIES.get('reg_country'))):
-            return reg_country.get('currency_code')
-        return None
+        return self.context['request'].channel.currency_code
 
     class Meta:
         model = models.Product
@@ -87,9 +84,7 @@ class ProductDetailUnitSerializer(serializers.ModelSerializer):
         return VariantsSerializer(ProductService.get_variants(obj=obj, request=self.context['request']), many=True).data
 
     def get_currency(self, obj):
-        if reg_country := dict(parse_qsl(self.context['request'].COOKIES.get('reg_country'))):
-            return reg_country.get('currency_code')
-        return None
+        return self.context['request'].channel.currency_code
 
     class Meta:
         model = models.Product
@@ -162,9 +157,7 @@ class ProductVariantDetailSerializer(serializers.ModelSerializer):
         return obj.product.rating
 
     def get_currency(self, obj):
-        if reg_country := dict(parse_qsl(self.context['request'].COOKIES.get('reg_country'))):
-            return reg_country.get('currency_code')
-        return None
+        return self.context['request'].channel.currency_code
 
     class Meta:
         model = models.ProductVariant
